@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<full-backup-content>
+    <!-- Exclude sensitive data from backup -->
+    <exclude domain="sharedpref" path="secure_storage.xml" />
+    <exclude domain="database" path="vault.db" />
+    <exclude domain="file" path="vault/" />
+    <exclude domain="file" path="exports/" />
+    
+    <!-- Include app preferences and settings -->
+    <include domain="sharedpref" path="app_preferences.xml" />
+    <include domain="sharedpref" path="theme_settings.xml" />
+    <include domain="sharedpref" path="calculator_history.xml" />
+    
+    <!-- Include calculation history (non-sensitive) -->
+    <include domain="database" path="calculations.db" />
+    <include domain="database" path="budgets.db" />
+    <include domain="database" path="reminders.db" />
+</full-backup-content>

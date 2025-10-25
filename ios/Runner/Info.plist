@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>CFBundleDisplayName</key>
+	<string>CalcMaster</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>calcmaster</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(FLUTTER_BUILD_NAME)</string>
+	<key>CFBundleSignature</key>
+	<string>????</string>
+	<key>CFBundleVersion</key>
+	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
+	<key>UILaunchStoryboardName</key>
+	<string>LaunchScreen</string>
+	<key>UIMainStoryboardFile</key>
+	<string>Main</string>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<key>UISupportedInterfaceOrientations~ipad</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<key>UIViewControllerBasedStatusBarAppearance</key>
+	<false/>
+	<key>CADisableMinimumFrameDurationOnPhone</key>
+	<true/>
+	<key>UIApplicationSupportsIndirectInputEvents</key>
+	<true/>
+	
+	<!-- Permissions -->
+	<key>NSCameraUsageDescription</key>
+	<string>CalcMaster needs camera access to capture photos for the privacy vault.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>CalcMaster needs microphone access for voice input and speech-to-text features.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>CalcMaster needs photo library access to import images for the privacy vault.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>CalcMaster needs photo library access to save exported images.</string>
+	<key>NSDocumentsFolderUsageDescription</key>
+	<string>CalcMaster needs document folder access to import and export files.</string>
+	<key>NSDownloadsFolderUsageDescription</key>
+	<string>CalcMaster needs downloads folder access to import and export files.</string>
+	
+	<!-- Background modes -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>background-processing</string>
+		<string>background-fetch</string>
+	</array>
+	
+	<!-- File sharing -->
+	<key>UIFileSharingEnabled</key>
+	<true/>
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<true/>
+	
+	<!-- URL schemes -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>calcmaster</string>
+			<key>CFBundleURLSchemes</key>
+		<array>
+			<string>calcmaster</string>
+		</array>
+		</dict>
+	</array>
+	
+	<!-- App Transport Security -->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<false/>
+		<key>NSExceptionDomains</key>
+		<dict>
+			<key>localhost</key>
+			<dict>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<true/>
+			</dict>
+		</dict>
+	</dict>
+	
+	<!-- Face ID and Touch ID -->
+	<key>NSFaceIDUsageDescription</key>
+	<string>CalcMaster uses Face ID for secure authentication in the privacy vault.</string>
+	
+	<!-- Local notifications -->
+	<key>UILocalNotificationUsageDescription</key>
+	<string>CalcMaster uses local notifications for reminders and alerts.</string>
+	
+	<!-- Speech recognition -->
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>CalcMaster uses speech recognition for voice input features.</string>
+	
+	<!-- Contacts (if needed for future features) -->
+	<key>NSContactsUsageDescription</key>
+	<string>CalcMaster may need contacts access for future features.</string>
+	
+	<!-- Location (if needed for future features) -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>CalcMaster may need location access for future features.</string>
+	
+	<!-- Calendar (if needed for future features) -->
+	<key>NSCalendarsUsageDescription</key>
+	<string>CalcMaster may need calendar access for future features.</string>
+	
+	<!-- Reminders (if needed for future features) -->
+	<key>NSRemindersUsageDescription</key>
+	<string>CalcMaster may need reminders access for future features.</string>
+</dict>
+</plist>

@@ -1,0 +1,1115 @@
+import 'dart:io';
+import 'dart:typed_data';
+import 'dart:ui' as ui;
+import 'package:share_plus/share_plus.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
+
+class SharingService {
+  // Share text content
+  static Future<void> shareText(String text, {String? subject}) async {
+    try {
+      await Share.share(
+        text,
+        subject: subject,
+      );
+    } catch (e) {
+      if (kDebugMode) print('Error sharing text: $e');
+    }
+  }
+  
+  // Share calculation result
+  static Future<void> shareCalculation(String expression, String result) async {
+    final text = 'Calculation Result:\n$expression = $result\n\nShared from CalcMaster';
+    await shareText(text, subject: 'Calculation Result');
+  }
+  
+  // Share multiple calculations
+  static Future<void> shareCalculations(List<Map<String, String>> calculations) async {
+    final buffer = StringBuffer();
+    buffer.writeln('Calculation History');
+    buffer.writeln('==================');
+    buffer.writeln();
+    
+    for (int i = 0; i < calculations.length; i++) {
+      final calc = calculations[i];
+      buffer.writeln('${i + 1}. ${calc['expression']} = ${calc['result']}');
+    }
+    
+    buffer.writeln();
+    buffer.writeln('Shared from CalcMaster');
+    
+    await shareText(buffer.toString(), subject: 'Calculation History');
+  }
+  
+  // Share unit conversion
+  static Future<void> shareConversion(String from, String to, double value, double result) async {
+    final text = 'Unit Conversion:\n$value $from = $result $to\n\nShared from CalcMaster';
+    await shareText(text, subject: 'Unit Conversion');
+  }
+  
+  // Share currency conversion
+  static Future<void> shareCurrencyConversion(String from, String to, double amount, double result) async {
+    final text = 'Currency Conversion:\n$amount $from = $result $to\n\nShared from CalcMaster';
+    await shareText(text, subject: 'Currency Conversion');
+  }
+  
+  // Share health calculation
+  static Future<void> shareHealthResult(String calculation, String result, String category) async {
+    final text = 'Health Calculation:\n$calculation: $result\nCategory: $category\n\nShared from CalcMaster';
+    await shareText(text, subject: 'Health Calculation');
+  }
+  
+  // Share finance calculation
+  static Future<void> shareFinanceResult(String calculation, String result) async {
+    final text = 'Finance Calculation:\n$calculation: $result\n\nShared from CalcMaster';
+    await shareText(text, subject: 'Finance Calculation');
+  }
+  
+  // Share budget summary
+  static Future<void> shareBudgetSummary(Map<String, dynamic> budget) async {
+    final buffer = StringBuffer();
+    buffer.writeln('Budget Summary');
+    buffer.writeln('==============');
+    buffer.writeln();
+    buffer.writeln('Budget Name: ${budget['name']}');
+    buffer.writeln('Total Income: \$${budget['totalIncome']}');
+    buffer.writeln('Total Expenses: \$${budget['totalExpenses']}');
+    buffer.writeln('Remaining: \$${budget['remaining']}');
+    buffer.writeln();
+    
+    if (budget['categories'] != null) {
+      buffer.writeln('Expense Categories:');
+      final categories = budget['categories'] as Map<String, double>;
+      categories.forEach((category, amount) {
+        buffer.writeln('- $category: \$${amount.toStringAsFixed(2)}');
+      });
+    }
+    
+    buffer.writeln();
+    buffer.writeln('Shared from CalcMaster');
+    
+    await shareText(buffer.toString(), subject: 'Budget Summary');
+  }
+  
+  // Share reminder
+  static Future<void> shareReminder(Map<String, dynamic> reminder) async {
+    final text = 'Reminder:\n${reminder['title']}\n\n${reminder['message']}\n\nDue: ${reminder['dateTime']}\n\nShared from CalcMaster';
+    await shareText(text, subject: 'Reminder');
+  }
+  
+  // Export calculations to CSV
+  static Future<String> exportCalculationsToCSV(List<Map<String, String>> calculations) async {
+    final buffer = StringBuffer();
+    buffer.writeln('Expression,Result,Timestamp');
+    
+    for (final calc in calculations) {
+      final expression = calc['expression']?.replaceAll(',', ';') ?? '';
+      final result = calc['result']?.replaceAll(',', ';') ?? '';
+      final timestamp = calc['timestamp'] ?? '';
+      buffer.writeln('$expression,$result,$timestamp');
+    }
+    
+    return buffer.toString();
+  }
+  
+  // Export budget to CSV
+  static Future<String> exportBudgetToCSV(Map<String, dynamic> budget) async {
+    final buffer = StringBuffer();
+    buffer.writeln('Category,Amount,Type,Date');
+    
+    // Add income entries
+    if (budget['income'] != null) {
+      final income = budget['income'] as List<Map<String, dynamic>>;
+      for (final entry in income) {
+        buffer.writeln('${entry['category']},${entry['amount']},Income,${entry['date']}');
+      }
+    }
+    
+    // Add expense entries
+    if (budget['expenses'] != null) {
+      final expenses = budget['expenses'] as List<Map<String, dynamic>>;
+      for (final entry in expenses) {
+        buffer.writeln('${entry['category']},${entry['amount']},Expense,${entry['date']}');
+      }
+    }
+    
+    return buffer.toString();
+  }
+  
+  // Export to PDF
+  static Future<Uint8List> exportToPDF(String title, String content) async {
+    final pdf = pw.Document();
+    
+    pdf.addPage(
+      pw.Page(
+        build: (pw.Context context) {
+          return pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Text(
+                title,
+                style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold),
+              ),
+              pw.SizedBox(height: 20),
+              pw.Text(
+                content,
+                style: const pw.TextStyle(fontSize: 12),
+              ),
+              pw.Spacer(),
+              pw.Text(
+                'Generated by CalcMaster',
+                style: pw.TextStyle(fontSize: 10, color: PdfColors.grey),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+    
+    return pdf.save();
+  }
+  
+  // Export calculations to PDF
+  static Future<Uint8List> exportCalculationsToPDF(List<Map<String, String>> calculations) async {
+    final pdf = pw.Document();
+    
+    pdf.addPage(
+      pw.MultiPage(
+        build: (pw.Context context) {
+          return [
+            pw.Header(
+              level: 0,
+              child: pw.Text(
+                'Calculation History',
+                style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold),
+              ),
+            ),
+            pw.SizedBox(height: 20),
+            pw.Table(
+              border: pw.TableBorder.all(),
+              children: [
+                pw.TableRow(
+                  decoration: const pw.BoxDecoration(color: PdfColors.grey300),
+                  children: [
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.all(8),
+                      child: pw.Text('Expression', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                    ),
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.all(8),
+                      child: pw.Text('Result', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                    ),
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.all(8),
+                      child: pw.Text('Date', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                    ),
+                  ],
+                ),
+                ...calculations.map((calc) => pw.TableRow(
+                  children: [
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.all(8),
+                      child: pw.Text(calc['expression'] ?? ''),
+                    ),
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.all(8),
+                      child: pw.Text(calc['result'] ?? ''),
+                    ),
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.all(8),
+                      child: pw.Text(calc['timestamp'] ?? ''),
+                    ),
+                  ],
+                )),
+              ],
+            ),
+          ];
+        },
+      ),
+    );
+    
+    return pdf.save();
+  }
+  
+  // Export budget to PDF
+  static Future<Uint8List> exportBudgetToPDF(Map<String, dynamic> budget) async {
+    final pdf = pw.Document();
+    
+    pdf.addPage(
+      pw.MultiPage(
+        build: (pw.Context context) {
+          return [
+            pw.Header(
+              level: 0,
+              child: pw.Text(
+                'Budget Report: ${budget['name']}',
+                style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold),
+              ),
+            ),
+            pw.SizedBox(height: 20),
+            pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              children: [
+                pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text('Total Income: \$${budget['totalIncome']}'),
+                    pw.Text('Total Expenses: \$${budget['totalExpenses']}'),
+                    pw.Text('Remaining: \$${budget['remaining']}'),
+                  ],
+                ),
+                pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.end,
+                  children: [
+                    pw.Text('Generated: ${DateTime.now().toString().split(' ')[0]}'),
+                  ],
+                ),
+              ],
+            ),
+            pw.SizedBox(height: 20),
+            if (budget['categories'] != null) ...[
+              pw.Text(
+                'Expense Categories',
+                style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold),
+              ),
+              pw.SizedBox(height: 10),
+              pw.Table(
+                border: pw.TableBorder.all(),
+                children: [
+                  pw.TableRow(
+                    decoration: const pw.BoxDecoration(color: PdfColors.grey300),
+                    children: [
+                      pw.Padding(
+                        padding: const pw.EdgeInsets.all(8),
+                        child: pw.Text('Category', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                      ),
+                      pw.Padding(
+                        padding: const pw.EdgeInsets.all(8),
+                        child: pw.Text('Amount', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                      ),
+                    ],
+                  ),
+                  ...(budget['categories'] as Map<String, double>).entries.map((entry) => pw.TableRow(
+                    children: [
+                      pw.Padding(
+                        padding: const pw.EdgeInsets.all(8),
+                        child: pw.Text(entry.key),
+                      ),
+                      pw.Padding(
+                        padding: const pw.EdgeInsets.all(8),
+                        child: pw.Text('\$${entry.value.toStringAsFixed(2)}'),
+                      ),
+                    ],
+                  )),
+                ],
+              ),
+            ],
+          ];
+        },
+      ),
+    );
+    
+    return pdf.save();
+  }
+  
+  // Save file to device storage
+  static Future<String> saveFileToStorage(String content, String fileName, String extension) async {
+    try {
+      final directory = await getApplicationDocumentsDirectory();
+      final file = File('${directory.path}/$fileName.$extension');
+      await file.writeAsString(content);
+      return file.path;
+    } catch (e) {
+      if (kDebugMode) print('Error saving file: $e');
+      rethrow;
+    }
+  }
+  
+  // Save PDF to device storage
+  static Future<String> savePDFToStorage(Uint8List pdfBytes, String fileName) async {
+    try {
+      final directory = await getApplicationDocumentsDirectory();
+      final file = File('${directory.path}/$fileName.pdf');
+      await file.writeAsBytes(pdfBytes);
+      return file.path;
+    } catch (e) {
+      if (kDebugMode) print('Error saving PDF: $e');
+      rethrow;
+    }
+  }
+  
+  // Share file
+  static Future<void> shareFile(String filePath, {String? subject}) async {
+    try {
+      await Share.shareXFiles(
+        [XFile(filePath)],
+        subject: subject,
+      );
+    } catch (e) {
+      if (kDebugMode) print('Error sharing file: $e');
+    }
+  }
+  
+  // Share CSV file
+  static Future<void> shareCSV(String csvContent, String fileName) async {
+    try {
+      final filePath = await saveFileToStorage(csvContent, fileName, 'csv');
+      await shareFile(filePath, subject: 'CSV Export');
+    } catch (e) {
+      if (kDebugMode) print('Error sharing CSV: $e');
+    }
+  }
+  
+  // Share PDF file
+  static Future<void> sharePDF(Uint8List pdfBytes, String fileName) async {
+    try {
+      final filePath = await savePDFToStorage(pdfBytes, fileName);
+      await shareFile(filePath, subject: 'PDF Export');
+    } catch (e) {
+      if (kDebugMode) print('Error sharing PDF: $e');
+    }
+  }
+  
+  // Share calculations as CSV
+  static Future<void> shareCalculationsAsCSV(List<Map<String, String>> calculations) async {
+    try {
+      final csvContent = await exportCalculationsToCSV(calculations);
+      final fileName = 'calculations_${DateTime.now().millisecondsSinceEpoch}';
+      await shareCSV(csvContent, fileName);
+    } catch (e) {
+      if (kDebugMode) print('Error sharing calculations as CSV: $e');
+    }
+  }
+  
+  // Share calculations as PDF
+  static Future<void> shareCalculationsAsPDF(List<Map<String, String>> calculations) async {
+    try {
+      final pdfBytes = await exportCalculationsToPDF(calculations);
+      final fileName = 'calculations_${DateTime.now().millisecondsSinceEpoch}';
+      await sharePDF(pdfBytes, fileName);
+    } catch (e) {
+      if (kDebugMode) print('Error sharing calculations as PDF: $e');
+    }
+  }
+  
+  // Share budget as CSV
+  static Future<void> shareBudgetAsCSV(Map<String, dynamic> budget) async {
+    try {
+      final csvContent = await exportBudgetToCSV(budget);
+      final fileName = 'budget_${budget['name']}_${DateTime.now().millisecondsSinceEpoch}';
+      await shareCSV(csvContent, fileName);
+    } catch (e) {
+      if (kDebugMode) print('Error sharing budget as CSV: $e');
+    }
+  }
+  
+  // Share budget as PDF
+  static Future<void> shareBudgetAsPDF(Map<String, dynamic> budget) async {
+    try {
+      final pdfBytes = await exportBudgetToPDF(budget);
+      final fileName = 'budget_${budget['name']}_${DateTime.now().millisecondsSinceEpoch}';
+      await sharePDF(pdfBytes, fileName);
+    } catch (e) {
+      if (kDebugMode) print('Error sharing budget as PDF: $e');
+    }
+  }
+  
+  // Share app information
+  static Future<void> shareApp() async {
+    const text = 'Check out CalcMaster - The Ultimate Multi-Themed Smart Calculator + All-in-One Hub App!\n\n'
+        'Features:\n'
+        '• Scientific Calculator with 991+ functions\n'
+        '• Algebra & Geometry Solvers\n'
+        '• Unit & Currency Converters\n'
+        '• Finance & Health Calculators\n'
+        '• Budget Management\n'
+        '• Privacy Vault\n'
+        '• Voice Support\n'
+        '• Multiple Themes\n'
+        '• Offline Functionality\n\n'
+        'Download now!';
+    
+    await shareText(text, subject: 'CalcMaster - Smart Calculator App');
+  }
+
+  // Share budget result
+  static Future<void> shareBudgetResult(String result) async {
+    final text = 'Budget Result:\n$result\n\nShared from CalcMaster';
+    await shareText(text, subject: 'Budget Result');
+  }
+
+  // Share currency result
+  static Future<void> shareCurrencyResult(String result) async {
+    final text = 'Currency Conversion Result:\n$result\n\nShared from CalcMaster';
+    await shareText(text, subject: 'Currency Conversion');
+  }
+
+  // Share graph result
+  static Future<void> shareGraphResult(String graphType, String result) async {
+    final text = 'Graph Result ($graphType):\n$result\n\nShared from CalcMaster';
+    await shareText(text, subject: 'Graph Result');
+  }
+
+  // Share reminder result
+  static Future<void> shareReminderResult(String result) async {
+    final text = 'Reminder Result:\n$result\n\nShared from CalcMaster';
+    await shareText(text, subject: 'Reminder');
+  }
+
+  // Share vault result
+  static Future<void> shareVaultResult(String result) async {
+    final text = 'Vault Result:\n$result\n\nShared from CalcMaster';
+    await shareText(text, subject: 'Privacy Vault');
+  }
+
+  // Share stats result
+  static Future<void> shareStatsResult(String result) async {
+    final text = 'Statistics & Insights:\n$result\n\nShared from CalcMaster';
+    await shareText(text, subject: 'Statistics Report');
+  }
+
+  // Share about info
+  static Future<void> shareAboutInfo(String result) async {
+    final text = 'About CalcMaster:\n$result\n\nShared from CalcMaster';
+    await shareText(text, subject: 'About CalcMaster');
+  }
+
+  // Share history result
+  static Future<void> shareHistoryResult(String result) async {
+    final text = 'Calculation History:\n$result\n\nShared from CalcMaster';
+    await shareText(text, subject: 'Calculation History');
+  }
+
+  // Share settings result
+  static Future<void> shareSettingsResult(String result) async {
+    final text = 'Settings Information:\n$result\n\nShared from CalcMaster';
+    await shareText(text, subject: 'App Settings');
+  }
+  
+  // Get file size in human readable format
+  static String getFileSize(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    if (bytes < 1024 * 1024 * 1024) return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
+  }
+  
+  // Check if sharing is available
+  static Future<bool> isSharingAvailable() async {
+    try {
+      // Try to share a test string
+      await Share.share('test', subject: 'test');
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // Export widget as image
+  static Future<Uint8List> exportWidgetAsImage(GlobalKey repaintBoundaryKey) async {
+    try {
+      final RenderRepaintBoundary boundary = repaintBoundaryKey.currentContext!
+          .findRenderObject() as RenderRepaintBoundary;
+      final ui.Image image = await boundary.toImage(pixelRatio: 3.0);
+      final ByteData? byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      return byteData!.buffer.asUint8List();
+    } catch (e) {
+      if (kDebugMode) print('Error exporting widget as image: $e');
+      rethrow;
+    }
+  }
+
+  // Export chart as image
+  static Future<Uint8List> exportChartAsImage(GlobalKey repaintBoundaryKey, String chartType) async {
+    try {
+      final imageBytes = await exportWidgetAsImage(repaintBoundaryKey);
+      return imageBytes;
+    } catch (e) {
+      if (kDebugMode) print('Error exporting chart as image: $e');
+      rethrow;
+    }
+  }
+
+  // Save image to device storage
+  static Future<String> saveImageToStorage(Uint8List imageBytes, String fileName) async {
+    try {
+      final directory = await getApplicationDocumentsDirectory();
+      final file = File('${directory.path}/$fileName.png');
+      await file.writeAsBytes(imageBytes);
+      return file.path;
+    } catch (e) {
+      if (kDebugMode) print('Error saving image: $e');
+      rethrow;
+    }
+  }
+
+  // Share image file
+  static Future<void> shareImage(Uint8List imageBytes, String fileName) async {
+    try {
+      final filePath = await saveImageToStorage(imageBytes, fileName);
+      await shareFile(filePath, subject: 'Chart Export');
+    } catch (e) {
+      if (kDebugMode) print('Error sharing image: $e');
+    }
+  }
+
+  // Export calculation history as comprehensive PDF
+  static Future<Uint8List> exportComprehensiveHistoryPDF(List<Map<String, String>> calculations) async {
+    final pdf = pw.Document();
+    
+    pdf.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        build: (pw.Context context) {
+          return [
+            pw.Header(
+              level: 0,
+              child: pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Text(
+                    'CalcMaster - Calculation History',
+                    style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold),
+                  ),
+                  pw.Text(
+                    'Generated: ${DateTime.now().toString().split(' ')[0]}',
+                    style: pw.TextStyle(fontSize: 12, color: PdfColors.grey),
+                  ),
+                ],
+              ),
+            ),
+            pw.SizedBox(height: 20),
+            pw.Text(
+              'Total Calculations: ${calculations.length}',
+              style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold),
+            ),
+            pw.SizedBox(height: 20),
+            pw.Table(
+              border: pw.TableBorder.all(),
+              columnWidths: {
+                0: const pw.FlexColumnWidth(3),
+                1: const pw.FlexColumnWidth(2),
+                2: const pw.FlexColumnWidth(2),
+              },
+              children: [
+                pw.TableRow(
+                  decoration: const pw.BoxDecoration(color: PdfColors.grey300),
+                  children: [
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.all(8),
+                      child: pw.Text('Expression', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                    ),
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.all(8),
+                      child: pw.Text('Result', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                    ),
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.all(8),
+                      child: pw.Text('Date', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                    ),
+                  ],
+                ),
+                ...calculations.map((calc) => pw.TableRow(
+                  children: [
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.all(8),
+                      child: pw.Text(calc['expression'] ?? '', style: const pw.TextStyle(fontSize: 10)),
+                    ),
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.all(8),
+                      child: pw.Text(calc['result'] ?? '', style: const pw.TextStyle(fontSize: 10)),
+                    ),
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.all(8),
+                      child: pw.Text(calc['timestamp'] ?? '', style: const pw.TextStyle(fontSize: 10)),
+                    ),
+                  ],
+                )),
+              ],
+            ),
+            pw.SizedBox(height: 20),
+            pw.Divider(),
+            pw.SizedBox(height: 10),
+            pw.Text(
+              'Generated by CalcMaster - Ultimate Multi-Themed Smart Calculator',
+              style: pw.TextStyle(fontSize: 10, color: PdfColors.grey),
+              textAlign: pw.TextAlign.center,
+            ),
+          ];
+        },
+      ),
+    );
+    
+    return pdf.save();
+  }
+
+  // Export budget as comprehensive PDF with charts
+  static Future<Uint8List> exportComprehensiveBudgetPDF(Map<String, dynamic> budget) async {
+    final pdf = pw.Document();
+    
+    pdf.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        build: (pw.Context context) {
+          return [
+            pw.Header(
+              level: 0,
+              child: pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Text(
+                    'Budget Report: ${budget['name']}',
+                    style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold),
+                  ),
+                  pw.Text(
+                    'Generated: ${DateTime.now().toString().split(' ')[0]}',
+                    style: pw.TextStyle(fontSize: 12, color: PdfColors.grey),
+                  ),
+                ],
+              ),
+            ),
+            pw.SizedBox(height: 20),
+            pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceAround,
+              children: [
+                pw.Container(
+                  padding: const pw.EdgeInsets.all(16),
+                  decoration: pw.BoxDecoration(
+                    border: pw.Border.all(color: PdfColors.grey),
+                    borderRadius: pw.BorderRadius.circular(8),
+                  ),
+                  child: pw.Column(
+                    children: [
+                      pw.Text('Total Income', style: pw.TextStyle(fontSize: 14, color: PdfColors.green)),
+                      pw.Text('\$${budget['totalIncome']}', style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold)),
+                    ],
+                  ),
+                ),
+                pw.Container(
+                  padding: const pw.EdgeInsets.all(16),
+                  decoration: pw.BoxDecoration(
+                    border: pw.Border.all(color: PdfColors.grey),
+                    borderRadius: pw.BorderRadius.circular(8),
+                  ),
+                  child: pw.Column(
+                    children: [
+                      pw.Text('Total Expenses', style: pw.TextStyle(fontSize: 14, color: PdfColors.red)),
+                      pw.Text('\$${budget['totalExpenses']}', style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold)),
+                    ],
+                  ),
+                ),
+                pw.Container(
+                  padding: const pw.EdgeInsets.all(16),
+                  decoration: pw.BoxDecoration(
+                    border: pw.Border.all(color: PdfColors.grey),
+                    borderRadius: pw.BorderRadius.circular(8),
+                  ),
+                  child: pw.Column(
+                    children: [
+                      pw.Text('Remaining', style: pw.TextStyle(fontSize: 14, color: PdfColors.blue)),
+                      pw.Text('\$${budget['remaining']}', style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            pw.SizedBox(height: 30),
+            if (budget['categories'] != null) ...[
+              pw.Text(
+                'Expense Breakdown',
+                style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold),
+              ),
+              pw.SizedBox(height: 15),
+              pw.Table(
+                border: pw.TableBorder.all(),
+                columnWidths: {
+                  0: const pw.FlexColumnWidth(3),
+                  1: const pw.FlexColumnWidth(2),
+                  2: const pw.FlexColumnWidth(2),
+                },
+                children: [
+                  pw.TableRow(
+                    decoration: const pw.BoxDecoration(color: PdfColors.grey300),
+                    children: [
+                      pw.Padding(
+                        padding: const pw.EdgeInsets.all(8),
+                        child: pw.Text('Category', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                      ),
+                      pw.Padding(
+                        padding: const pw.EdgeInsets.all(8),
+                        child: pw.Text('Amount', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                      ),
+                      pw.Padding(
+                        padding: const pw.EdgeInsets.all(8),
+                        child: pw.Text('Percentage', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                      ),
+                    ],
+                  ),
+                  ...(budget['categories'] as Map<String, double>).entries.map((entry) {
+                    final percentage = (entry.value / budget['totalExpenses'] * 100).toStringAsFixed(1);
+                    return pw.TableRow(
+                      children: [
+                        pw.Padding(
+                          padding: const pw.EdgeInsets.all(8),
+                          child: pw.Text(entry.key),
+                        ),
+                        pw.Padding(
+                          padding: const pw.EdgeInsets.all(8),
+                          child: pw.Text('\$${entry.value.toStringAsFixed(2)}'),
+                        ),
+                        pw.Padding(
+                          padding: const pw.EdgeInsets.all(8),
+                          child: pw.Text('$percentage%'),
+                        ),
+                      ],
+                    );
+                  }),
+                ],
+              ),
+            ],
+            pw.SizedBox(height: 30),
+            pw.Divider(),
+            pw.SizedBox(height: 10),
+            pw.Text(
+              'Generated by CalcMaster - Ultimate Multi-Themed Smart Calculator',
+              style: pw.TextStyle(fontSize: 10, color: PdfColors.grey),
+              textAlign: pw.TextAlign.center,
+            ),
+          ];
+        },
+      ),
+    );
+    
+    return pdf.save();
+  }
+
+  // Export health report as PDF
+  static Future<Uint8List> exportHealthReportPDF(Map<String, dynamic> healthData) async {
+    final pdf = pw.Document();
+    
+    pdf.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        build: (pw.Context context) {
+          return [
+            pw.Header(
+              level: 0,
+              child: pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Text(
+                    'Health Report',
+                    style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold),
+                  ),
+                  pw.Text(
+                    'Generated: ${DateTime.now().toString().split(' ')[0]}',
+                    style: pw.TextStyle(fontSize: 12, color: PdfColors.grey),
+                  ),
+                ],
+              ),
+            ),
+            pw.SizedBox(height: 20),
+            pw.Text(
+              'Personal Information',
+              style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold),
+            ),
+            pw.SizedBox(height: 10),
+            pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              children: [
+                pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text('Age: ${healthData['age']} years'),
+                    pw.Text('Height: ${healthData['height']} cm'),
+                    pw.Text('Weight: ${healthData['weight']} kg'),
+                    pw.Text('Gender: ${healthData['gender']}'),
+                  ],
+                ),
+                pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.end,
+                  children: [
+                    pw.Text('BMI: ${healthData['bmi']}'),
+                    pw.Text('Category: ${healthData['bmiCategory']}'),
+                    pw.Text('BMR: ${healthData['bmr']} calories'),
+                    pw.Text('Activity Level: ${healthData['activityLevel']}'),
+                  ],
+                ),
+              ],
+            ),
+            pw.SizedBox(height: 30),
+            pw.Text(
+              'Health Metrics',
+              style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold),
+            ),
+            pw.SizedBox(height: 15),
+            pw.Table(
+              border: pw.TableBorder.all(),
+              children: [
+                pw.TableRow(
+                  decoration: const pw.BoxDecoration(color: PdfColors.grey300),
+                  children: [
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.all(8),
+                      child: pw.Text('Metric', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                    ),
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.all(8),
+                      child: pw.Text('Value', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                    ),
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.all(8),
+                      child: pw.Text('Status', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                    ),
+                  ],
+                ),
+                ...healthData['metrics'].map<pw.TableRow>((metric) => pw.TableRow(
+                  children: [
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.all(8),
+                      child: pw.Text(metric['name']),
+                    ),
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.all(8),
+                      child: pw.Text(metric['value']),
+                    ),
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.all(8),
+                      child: pw.Text(metric['status']),
+                    ),
+                  ],
+                )),
+              ],
+            ),
+            pw.SizedBox(height: 30),
+            pw.Divider(),
+            pw.SizedBox(height: 10),
+            pw.Text(
+              'Generated by CalcMaster - Ultimate Multi-Themed Smart Calculator',
+              style: pw.TextStyle(fontSize: 10, color: PdfColors.grey),
+              textAlign: pw.TextAlign.center,
+            ),
+          ];
+        },
+      ),
+    );
+    
+    return pdf.save();
+  }
+
+  // Export comprehensive statistics report
+  static Future<Uint8List> exportStatisticsReportPDF(Map<String, dynamic> stats) async {
+    final pdf = pw.Document();
+    
+    pdf.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        build: (pw.Context context) {
+          return [
+            pw.Header(
+              level: 0,
+              child: pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Text(
+                    'Usage Statistics Report',
+                    style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold),
+                  ),
+                  pw.Text(
+                    'Generated: ${DateTime.now().toString().split(' ')[0]}',
+                    style: pw.TextStyle(fontSize: 12, color: PdfColors.grey),
+                  ),
+                ],
+              ),
+            ),
+            pw.SizedBox(height: 20),
+            pw.Text(
+              'App Usage Summary',
+              style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold),
+            ),
+            pw.SizedBox(height: 15),
+            pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceAround,
+              children: [
+                pw.Container(
+                  padding: const pw.EdgeInsets.all(16),
+                  decoration: pw.BoxDecoration(
+                    border: pw.Border.all(color: PdfColors.grey),
+                    borderRadius: pw.BorderRadius.circular(8),
+                  ),
+                  child: pw.Column(
+                    children: [
+                      pw.Text('Total Calculations', style: pw.TextStyle(fontSize: 14)),
+                      pw.Text('${stats['totalCalculations']}', style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold)),
+                    ],
+                  ),
+                ),
+                pw.Container(
+                  padding: const pw.EdgeInsets.all(16),
+                  decoration: pw.BoxDecoration(
+                    border: pw.Border.all(color: PdfColors.grey),
+                    borderRadius: pw.BorderRadius.circular(8),
+                  ),
+                  child: pw.Column(
+                    children: [
+                      pw.Text('Days Active', style: pw.TextStyle(fontSize: 14)),
+                      pw.Text('${stats['daysActive']}', style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold)),
+                    ],
+                  ),
+                ),
+                pw.Container(
+                  padding: const pw.EdgeInsets.all(16),
+                  decoration: pw.BoxDecoration(
+                    border: pw.Border.all(color: PdfColors.grey),
+                    borderRadius: pw.BorderRadius.circular(8),
+                  ),
+                  child: pw.Column(
+                    children: [
+                      pw.Text('Most Used Feature', style: pw.TextStyle(fontSize: 14)),
+                      pw.Text('${stats['mostUsedFeature']}', style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            pw.SizedBox(height: 30),
+            pw.Text(
+              'Feature Usage Breakdown',
+              style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold),
+            ),
+            pw.SizedBox(height: 15),
+            pw.Table(
+              border: pw.TableBorder.all(),
+              children: [
+                pw.TableRow(
+                  decoration: const pw.BoxDecoration(color: PdfColors.grey300),
+                  children: [
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.all(8),
+                      child: pw.Text('Feature', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                    ),
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.all(8),
+                      child: pw.Text('Usage Count', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                    ),
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.all(8),
+                      child: pw.Text('Percentage', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                    ),
+                  ],
+                ),
+                ...stats['featureUsage'].map<pw.TableRow>((feature) => pw.TableRow(
+                  children: [
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.all(8),
+                      child: pw.Text(feature['name']),
+                    ),
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.all(8),
+                      child: pw.Text('${feature['count']}'),
+                    ),
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.all(8),
+                      child: pw.Text('${feature['percentage']}%'),
+                    ),
+                  ],
+                )),
+              ],
+            ),
+            pw.SizedBox(height: 30),
+            pw.Divider(),
+            pw.SizedBox(height: 10),
+            pw.Text(
+              'Generated by CalcMaster - Ultimate Multi-Themed Smart Calculator',
+              style: pw.TextStyle(fontSize: 10, color: PdfColors.grey),
+              textAlign: pw.TextAlign.center,
+            ),
+          ];
+        },
+      ),
+    );
+    
+    return pdf.save();
+  }
+
+  // Share comprehensive history as PDF
+  static Future<void> shareComprehensiveHistoryAsPDF(List<Map<String, String>> calculations) async {
+    try {
+      final pdfBytes = await exportComprehensiveHistoryPDF(calculations);
+      final fileName = 'comprehensive_history_${DateTime.now().millisecondsSinceEpoch}';
+      await sharePDF(pdfBytes, fileName);
+    } catch (e) {
+      if (kDebugMode) print('Error sharing comprehensive history as PDF: $e');
+    }
+  }
+
+  // Share comprehensive budget as PDF
+  static Future<void> shareComprehensiveBudgetAsPDF(Map<String, dynamic> budget) async {
+    try {
+      final pdfBytes = await exportComprehensiveBudgetPDF(budget);
+      final fileName = 'comprehensive_budget_${budget['name']}_${DateTime.now().millisecondsSinceEpoch}';
+      await sharePDF(pdfBytes, fileName);
+    } catch (e) {
+      if (kDebugMode) print('Error sharing comprehensive budget as PDF: $e');
+    }
+  }
+
+  // Share health report as PDF
+  static Future<void> shareHealthReportAsPDF(Map<String, dynamic> healthData) async {
+    try {
+      final pdfBytes = await exportHealthReportPDF(healthData);
+      final fileName = 'health_report_${DateTime.now().millisecondsSinceEpoch}';
+      await sharePDF(pdfBytes, fileName);
+    } catch (e) {
+      if (kDebugMode) print('Error sharing health report as PDF: $e');
+    }
+  }
+
+  // Share statistics report as PDF
+  static Future<void> shareStatisticsReportAsPDF(Map<String, dynamic> stats) async {
+    try {
+      final pdfBytes = await exportStatisticsReportPDF(stats);
+      final fileName = 'statistics_report_${DateTime.now().millisecondsSinceEpoch}';
+      await sharePDF(pdfBytes, fileName);
+    } catch (e) {
+      if (kDebugMode) print('Error sharing statistics report as PDF: $e');
+    }
+  }
+
+  // Share chart as image
+  static Future<void> shareChartAsImage(GlobalKey repaintBoundaryKey, String chartType) async {
+    try {
+      final imageBytes = await exportChartAsImage(repaintBoundaryKey, chartType);
+      final fileName = '${chartType.toLowerCase()}_chart_${DateTime.now().millisecondsSinceEpoch}';
+      await shareImage(imageBytes, fileName);
+    } catch (e) {
+      if (kDebugMode) print('Error sharing chart as image: $e');
+    }
+  }
+
+  // Export all data as ZIP (placeholder for future implementation)
+  static Future<Uint8List> exportAllDataAsZIP(Map<String, dynamic> allData) async {
+    // This would require a ZIP library like archive
+    // For now, return empty bytes
+    return Uint8List(0);
+  }
+
+  // Share all data as ZIP
+  static Future<void> shareAllDataAsZIP(Map<String, dynamic> allData) async {
+    try {
+      final zipBytes = await exportAllDataAsZIP(allData);
+      final fileName = 'calcmaster_backup_${DateTime.now().millisecondsSinceEpoch}';
+      final filePath = await saveFileToStorage(String.fromCharCodes(zipBytes), fileName, 'zip');
+      await shareFile(filePath, subject: 'CalcMaster Data Backup');
+    } catch (e) {
+      if (kDebugMode) print('Error sharing all data as ZIP: $e');
+    }
+  }
+}

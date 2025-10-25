@@ -1,0 +1,5 @@
+# This is a placeholder for the app icon
+# In a real implementation, this would be a PNG file
+# The app icon should be 1024x1024 pixels for the main icon
+# and various sizes for different platforms (Android: 48dp, 72dp, 96dp, 144dp, 192dp)
+# iOS: 20pt, 29pt, 40pt, 60pt, 76pt, 83.5pt, 1024pt
