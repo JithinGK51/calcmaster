@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'calculator_screen.dart';
+import 'scientific_calculator_screen.dart';
 import 'algebra_screen.dart';
 import 'geometry_screen.dart';
 import 'finance_screen.dart';
@@ -178,6 +179,12 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
                 ),
                 _buildDrawerItem(
                   context,
+                  icon: Icons.science_outlined,
+                  title: 'Scientific Calculator',
+                  onTap: () => _navigateToScientificCalculator(),
+                ),
+                _buildDrawerItem(
+                  context,
                   icon: Icons.functions_outlined,
                   title: 'Algebra Solver',
                   onTap: () => _navigateToScreen(1),
@@ -305,6 +312,14 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
   void _navigateToScreenWidget(Widget screen) {
     Navigator.of(context).push(
       MaterialPageRoute(builder: (context) => screen),
+    );
+  }
+
+  void _navigateToScientificCalculator() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const ScientificCalculatorScreen(),
+      ),
     );
   }
 }

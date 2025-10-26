@@ -535,25 +535,30 @@ class _PrivacyVaultScreenState extends ConsumerState<PrivacyVaultScreen> {
                       ],
                     ),
                     const SizedBox(height: 16),
-                    Row(
+                    Column(
                       children: [
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: _importFile,
-                            icon: const Icon(Icons.file_upload),
-                            label: const Text('Import Files'),
-                          ),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                onPressed: _importFile,
+                                icon: const Icon(Icons.file_upload),
+                                label: const Text('Import Files'),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                onPressed: _importPhoto,
+                                icon: const Icon(Icons.photo),
+                                label: const Text('Import Photo'),
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: _importPhoto,
-                            icon: const Icon(Icons.photo),
-                            label: const Text('Import Photo'),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
+                        const SizedBox(height: 8),
+                        SizedBox(
+                          width: double.infinity,
                           child: ElevatedButton.icon(
                             onPressed: _importVideo,
                             icon: const Icon(Icons.videocam),
