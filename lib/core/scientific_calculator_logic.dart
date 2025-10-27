@@ -8,9 +8,31 @@ class ScientificCalculatorLogic {
   // Static method for simple evaluation
   static double evaluate(String expression) {
     try {
+      // Replace function names with proper syntax
+      String processedExpression = expression
+          .replaceAll('sin(', 'sin(')
+          .replaceAll('cos(', 'cos(')
+          .replaceAll('tan(', 'tan(')
+          .replaceAll('asin(', 'asin(')
+          .replaceAll('acos(', 'acos(')
+          .replaceAll('atan(', 'atan(')
+          .replaceAll('sinh(', 'sinh(')
+          .replaceAll('cosh(', 'cosh(')
+          .replaceAll('tanh(', 'tanh(')
+          .replaceAll('log(', 'log(')
+          .replaceAll('ln(', 'ln(')
+          .replaceAll('log2(', 'log2(')
+          .replaceAll('exp(', 'exp(')
+          .replaceAll('sqrt(', 'sqrt(')
+          .replaceAll('cbrt(', 'cbrt(')
+          .replaceAll('pi', pi.toString())
+          .replaceAll('e', e.toString())
+          .replaceAll('^', '^')
+          .replaceAll('!', '!');
+      
       final parser = Parser();
       final context = ContextModel();
-      final parsed = parser.parse(expression);
+      final parsed = parser.parse(processedExpression);
       return parsed.evaluate(EvaluationType.REAL, context);
     } catch (e) {
       throw Exception('Invalid expression: $e');
@@ -43,6 +65,17 @@ class ScientificCalculatorLogic {
   static double sinh(double x) => (math.exp(x) - math.exp(-x)) / 2;
   static double cosh(double x) => (math.exp(x) + math.exp(-x)) / 2;
   static double tanh(double x) => sinh(x) / cosh(x);
+  
+  // Inverse hyperbolic functions
+  static double asinh(double x) => math.log(x + math.sqrt(x * x + 1));
+  static double acosh(double x) {
+    if (x < 1) throw ArgumentError('Domain error: acosh($x)');
+    return math.log(x + math.sqrt(x * x - 1));
+  }
+  static double atanh(double x) {
+    if (x.abs() >= 1) throw ArgumentError('Domain error: atanh($x)');
+    return 0.5 * math.log((1 + x) / (1 - x));
+  }
   
   // Logarithmic functions
   static double log(double value) {
@@ -86,6 +119,42 @@ class ScientificCalculatorLogic {
       throw ArgumentError('Cannot calculate 0th root');
     }
     return math.pow(value, 1/n).toDouble();
+  }
+  
+  // Additional power functions
+  static double square(double value) => value * value;
+  static double cube(double value) => value * value * value;
+  static double reciprocal(double value) {
+    if (value == 0) throw ArgumentError('Division by zero');
+    return 1 / value;
+  }
+  
+  // Modulo and remainder
+  static double modulo(double dividend, double divisor) {
+    if (divisor == 0) throw ArgumentError('Division by zero');
+    return dividend % divisor;
+  }
+  
+  static double remainder(double dividend, double divisor) {
+    if (divisor == 0) throw ArgumentError('Division by zero');
+    return dividend.remainder(divisor);
+  }
+  
+  // GCD and LCM
+  static int gcd(int a, int b) {
+    a = a.abs();
+    b = b.abs();
+    while (b != 0) {
+      final temp = b;
+      b = a % b;
+      a = temp;
+    }
+    return a;
+  }
+  
+  static int lcm(int a, int b) {
+    if (a == 0 || b == 0) return 0;
+    return (a * b).abs() ~/ gcd(a, b);
   }
   
   // Factorial

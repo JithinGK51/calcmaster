@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../services/tts_service.dart';
 import '../../services/sharing_service.dart';
+import '../../services/history_service.dart';
 
 class BudgetScreen extends ConsumerStatefulWidget {
   const BudgetScreen({super.key});
@@ -57,7 +58,7 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
     super.dispose();
   }
 
-  void _addTransaction() {
+  void _addTransaction() async {
     try {
       final amount = double.tryParse(_expenseController.text) ?? 0;
       
@@ -85,6 +86,13 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
       });
 
       _expenseController.clear();
+
+      // Save to history
+      await HistoryService.saveFinanceCalculation(
+        'Budget Transaction: $_selectedType - $_selectedCategory',
+        'Amount: ₹${amount.toStringAsFixed(2)}, Balance: ₹${_budgetBalance.toStringAsFixed(2)}',
+        category: 'Budget Management',
+      );
 
       // Speak result if TTS is enabled
       if (_isTTSEnabled) {

@@ -388,18 +388,30 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Select Theme'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: AppTheme.values.map((theme) {
-            return ListTile(
-              title: Text(theme.name),
-              onTap: () {
-                ref.read(themeProvider.notifier).changeTheme(theme);
-                Navigator.of(context).pop();
-              },
-            );
-          }).toList(),
+        content: SizedBox(
+          width: double.maxFinite,
+          height: 400, // Fixed height to prevent overflow
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: AppTheme.values.length,
+            itemBuilder: (context, index) {
+              final theme = AppTheme.values[index];
+              return ListTile(
+                title: Text(theme.name),
+                onTap: () {
+                  ref.read(themeProvider.notifier).changeTheme(theme);
+                  Navigator.of(context).pop();
+                },
+              );
+            },
+          ),
         ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+        ],
       ),
     );
   }

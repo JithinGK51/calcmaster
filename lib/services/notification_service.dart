@@ -1,5 +1,6 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:timezone/timezone.dart' as tz;
 
 class NotificationService {
@@ -11,6 +12,9 @@ class NotificationService {
   static const String _calculationChannelId = 'calculation_channel';
   static const String _budgetChannelId = 'budget_channel';
   static const String _generalChannelId = 'general_channel';
+  static const String _healthChannelId = 'health_channel';
+  static const String _financeChannelId = 'finance_channel';
+  static const String _achievementChannelId = 'achievement_channel';
   
   // Initialize notification service
   static Future<void> initialize() async {
@@ -297,58 +301,6 @@ class NotificationService {
     );
   }
   
-  // Schedule recurring reminder
-  static Future<void> scheduleRecurringReminder({
-    required int id,
-    required String title,
-    required String body,
-    required DateTime firstDate,
-    required int intervalDays,
-    String? payload,
-  }) async {
-    if (!_isInitialized) {
-      await initialize();
-    }
-    
-    if (!_isInitialized) return;
-    
-    const androidDetails = AndroidNotificationDetails(
-      _reminderChannelId,
-      'Reminders',
-      channelDescription: 'Notifications for reminders and alerts',
-      importance: Importance.high,
-      priority: Priority.high,
-      playSound: true,
-      enableVibration: true,
-    );
-    
-    const iosDetails = DarwinNotificationDetails(
-      presentAlert: true,
-      presentBadge: true,
-      presentSound: true,
-    );
-    
-    const details = NotificationDetails(
-      android: androidDetails,
-      iOS: iosDetails,
-    );
-    
-    // Schedule multiple notifications for recurring reminder
-    for (int i = 0; i < 365; i++) { // Schedule for a year
-      final scheduledDate = firstDate.add(Duration(days: i * intervalDays));
-      if (scheduledDate.isAfter(DateTime.now())) {
-        await _notifications.zonedSchedule(
-          id + i,
-          title,
-          body,
-          tz.TZDateTime.from(scheduledDate, tz.local),
-          details,
-          payload: payload,
-          uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
-        );
-      }
-    }
-  }
   
   // Cancel notification
   static Future<void> cancelNotification(int id) async {
@@ -451,45 +403,6 @@ class NotificationService {
     );
   }
   
-  // Show health reminder
-  static Future<void> showHealthReminder({
-    required String reminderType,
-    required String message,
-  }) async {
-    if (!_isInitialized) {
-      await initialize();
-    }
-    
-    if (!_isInitialized) return;
-    
-    const androidDetails = AndroidNotificationDetails(
-      _reminderChannelId,
-      'Reminders',
-      channelDescription: 'Notifications for reminders and alerts',
-      importance: Importance.high,
-      priority: Priority.high,
-      playSound: true,
-      enableVibration: true,
-    );
-    
-    const iosDetails = DarwinNotificationDetails(
-      presentAlert: true,
-      presentBadge: true,
-      presentSound: true,
-    );
-    
-    const details = NotificationDetails(
-      android: androidDetails,
-      iOS: iosDetails,
-    );
-    
-    await _notifications.show(
-      997, // Special ID for health reminders
-      'Health Reminder',
-      message,
-      details,
-    );
-  }
   
   // Request notification permissions
   static Future<bool> requestPermissions() async {
@@ -553,4 +466,264 @@ class NotificationService {
       if (kDebugMode) print('Error opening notification settings: $e');
     }
   }
+  
+  // Schedule recurring reminder
+  static Future<void> scheduleRecurringReminder({
+    required int id,
+    required String title,
+    required String body,
+    required DateTime scheduledDate,
+    required RecurrenceType recurrence,
+  }) async {
+    if (!_isInitialized) {
+      await initialize();
+    }
+    
+    if (!_isInitialized) return;
+    
+    try {
+      final androidDetails = AndroidNotificationDetails(
+        _reminderChannelId,
+        'Reminders',
+        channelDescription: 'Reminder notifications',
+        importance: Importance.high,
+        priority: Priority.high,
+        showWhen: true,
+        enableVibration: true,
+        playSound: true,
+      );
+      
+      final iosDetails = DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+      );
+      
+      final details = NotificationDetails(
+        android: androidDetails,
+        iOS: iosDetails,
+      );
+      
+      switch (recurrence) {
+        case RecurrenceType.daily:
+          await _notifications.zonedSchedule(
+            id,
+            title,
+            body,
+            tz.TZDateTime.from(scheduledDate, tz.local),
+            details,
+            androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+            uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+            matchDateTimeComponents: DateTimeComponents.time,
+          );
+          break;
+        case RecurrenceType.weekly:
+          await _notifications.zonedSchedule(
+            id,
+            title,
+            body,
+            tz.TZDateTime.from(scheduledDate, tz.local),
+            details,
+            androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+            uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+            matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
+          );
+          break;
+        case RecurrenceType.monthly:
+          await _notifications.zonedSchedule(
+            id,
+            title,
+            body,
+            tz.TZDateTime.from(scheduledDate, tz.local),
+            details,
+            androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+            uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+            matchDateTimeComponents: DateTimeComponents.dayOfMonthAndTime,
+          );
+          break;
+        case RecurrenceType.yearly:
+          await _notifications.zonedSchedule(
+            id,
+            title,
+            body,
+            tz.TZDateTime.from(scheduledDate, tz.local),
+            details,
+            androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+            uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+            matchDateTimeComponents: DateTimeComponents.dayOfMonthAndTime,
+          );
+          break;
+        case RecurrenceType.once:
+          await _notifications.zonedSchedule(
+            id,
+            title,
+            body,
+            tz.TZDateTime.from(scheduledDate, tz.local),
+            details,
+            androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+            uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+          );
+          break;
+      }
+      
+      if (kDebugMode) print('Recurring reminder scheduled: $title');
+    } catch (e) {
+      if (kDebugMode) print('Error scheduling recurring reminder: $e');
+    }
+  }
+  
+  // Show achievement notification
+  static Future<void> showAchievementNotification({
+    required String title,
+    required String body,
+    required String achievementType,
+  }) async {
+    if (!_isInitialized) {
+      await initialize();
+    }
+    
+    if (!_isInitialized) return;
+    
+    try {
+      final androidDetails = AndroidNotificationDetails(
+        _achievementChannelId,
+        'Achievements',
+        channelDescription: 'Achievement notifications',
+        importance: Importance.high,
+        priority: Priority.high,
+        showWhen: true,
+        enableVibration: true,
+        playSound: true,
+        color: const Color(0xFF4CAF50), // Green for achievements
+      );
+      
+      final iosDetails = DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+      );
+      
+      final details = NotificationDetails(
+        android: androidDetails,
+        iOS: iosDetails,
+      );
+      
+      await _notifications.show(
+        DateTime.now().millisecondsSinceEpoch ~/ 1000,
+        title,
+        body,
+        details,
+      );
+      
+      if (kDebugMode) print('Achievement notification shown: $title');
+    } catch (e) {
+      if (kDebugMode) print('Error showing achievement notification: $e');
+    }
+  }
+  
+  // Show health reminder
+  static Future<void> showHealthReminder({
+    required String title,
+    required String body,
+    required String healthType,
+  }) async {
+    if (!_isInitialized) {
+      await initialize();
+    }
+    
+    if (!_isInitialized) return;
+    
+    try {
+      final androidDetails = AndroidNotificationDetails(
+        _healthChannelId,
+        'Health Reminders',
+        channelDescription: 'Health and fitness reminders',
+        importance: Importance.high,
+        priority: Priority.high,
+        showWhen: true,
+        enableVibration: true,
+        playSound: true,
+        color: const Color(0xFF2196F3), // Blue for health
+      );
+      
+      final iosDetails = DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+      );
+      
+      final details = NotificationDetails(
+        android: androidDetails,
+        iOS: iosDetails,
+      );
+      
+      await _notifications.show(
+        DateTime.now().millisecondsSinceEpoch ~/ 1000,
+        title,
+        body,
+        details,
+      );
+      
+      if (kDebugMode) print('Health reminder shown: $title');
+    } catch (e) {
+      if (kDebugMode) print('Error showing health reminder: $e');
+    }
+  }
+  
+  // Show finance alert
+  static Future<void> showFinanceAlert({
+    required String title,
+    required String body,
+    required String alertType,
+  }) async {
+    if (!_isInitialized) {
+      await initialize();
+    }
+    
+    if (!_isInitialized) return;
+    
+    try {
+      final androidDetails = AndroidNotificationDetails(
+        _financeChannelId,
+        'Finance Alerts',
+        channelDescription: 'Financial alerts and reminders',
+        importance: Importance.high,
+        priority: Priority.high,
+        showWhen: true,
+        enableVibration: true,
+        playSound: true,
+        color: const Color(0xFFFF9800), // Orange for finance
+      );
+      
+      final iosDetails = DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+      );
+      
+      final details = NotificationDetails(
+        android: androidDetails,
+        iOS: iosDetails,
+      );
+      
+      await _notifications.show(
+        DateTime.now().millisecondsSinceEpoch ~/ 1000,
+        title,
+        body,
+        details,
+      );
+      
+      if (kDebugMode) print('Finance alert shown: $title');
+    } catch (e) {
+      if (kDebugMode) print('Error showing finance alert: $e');
+    }
+  }
+}
+
+enum RecurrenceType {
+  once,
+  daily,
+  weekly,
+  monthly,
+  yearly,
 }
