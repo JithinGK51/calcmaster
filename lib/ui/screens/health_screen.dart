@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/health_logic.dart';
 import '../../services/tts_service.dart';
 import '../../services/sharing_service.dart';
+import '../../services/history_service.dart';
 
 class HealthScreen extends ConsumerStatefulWidget {
   const HealthScreen({super.key});
@@ -87,7 +88,7 @@ class _HealthScreenState extends ConsumerState<HealthScreen> {
     });
   }
 
-  void _calculate() {
+  void _calculate() async {
     try {
       String result = '';
       
@@ -273,6 +274,13 @@ class _HealthScreenState extends ConsumerState<HealthScreen> {
         _result = result;
       });
 
+      // Save to history
+      await HistoryService.saveHealthCalculation(
+        '$_selectedCalculator: ${_getCalculationExpression()}',
+        result,
+        category: _selectedCalculator,
+      );
+
       // Speak result if TTS is enabled
       if (_isTTSEnabled) {
         TTSService.speakHealthResult(_selectedCalculator, result, 'health');
@@ -286,6 +294,20 @@ class _HealthScreenState extends ConsumerState<HealthScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message)),
     );
+  }
+
+  String _getCalculationExpression() {
+    final fields = _getRequiredFields(_selectedCalculator);
+    final expression = StringBuffer();
+    
+    for (int i = 0; i < fields.length; i++) {
+      final field = fields[i];
+      final value = _controllers[field]?.text ?? '';
+      expression.write('$field: $value');
+      if (i < fields.length - 1) expression.write(', ');
+    }
+    
+    return expression.toString();
   }
 
   String _getActivityLevelText(String level) {

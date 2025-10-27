@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/finance_logic.dart';
 import '../../services/tts_service.dart';
 import '../../services/sharing_service.dart';
+import '../../services/history_service.dart';
 
 class FinanceScreen extends ConsumerStatefulWidget {
   const FinanceScreen({super.key});
@@ -83,7 +84,7 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
     });
   }
 
-  void _calculate() {
+  void _calculate() async {
     try {
       String result = '';
       
@@ -262,6 +263,13 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
         _result = result;
       });
 
+      // Save to history
+      await HistoryService.saveFinanceCalculation(
+        '$_selectedCalculator: ${_getCalculationExpression()}',
+        result,
+        category: _selectedCalculator,
+      );
+
       // Speak result if TTS is enabled
       if (_isTTSEnabled) {
         TTSService.speakFinanceResult(_selectedCalculator, result);
@@ -275,6 +283,20 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message)),
     );
+  }
+
+  String _getCalculationExpression() {
+    final fields = _getRequiredFields(_selectedCalculator);
+    final expression = StringBuffer();
+    
+    for (int i = 0; i < fields.length; i++) {
+      final field = fields[i];
+      final value = _controllers[field]?.text ?? '';
+      expression.write('$field: $value');
+      if (i < fields.length - 1) expression.write(', ');
+    }
+    
+    return expression.toString();
   }
 
   List<String> _getRequiredFields(String calculator) {

@@ -30,6 +30,11 @@ class _GraphScreenState extends ConsumerState<GraphScreen> {
   List<ScatterData> _scatterData = [];
   List<AreaData> _areaData = [];
   List<HistogramData> _histogramData = [];
+  List<PolarData> _polarData = [];
+  List<ContourData> _contourData = [];
+  List<VectorData> _vectorData = [];
+  List<StatisticalData> _statisticalData = [];
+  List<FinancialData> _financialData = [];
 
   final List<String> _graphTypes = [
     'Function Plot',
@@ -42,6 +47,11 @@ class _GraphScreenState extends ConsumerState<GraphScreen> {
     'Box Plot',
     'Heatmap',
     '3D Surface',
+    'Polar Plot',
+    'Contour Plot',
+    'Vector Field',
+    'Statistical Plot',
+    'Financial Chart',
   ];
 
   @override
@@ -1055,4 +1065,47 @@ class HistogramData {
   final int count;
   
   HistogramData(this.bin, this.count);
+}
+
+class PolarData {
+  final double angle;
+  final double radius;
+  
+  PolarData(this.angle, this.radius);
+}
+
+class ContourData {
+  final double x;
+  final double y;
+  final double z;
+  
+  ContourData(this.x, this.y, this.z);
+}
+
+class VectorData {
+  final double x;
+  final double y;
+  final double dx;
+  final double dy;
+  
+  VectorData(this.x, this.y, this.dx, this.dy);
+}
+
+class StatisticalData {
+  final String category;
+  final double value;
+  final double error;
+  
+  StatisticalData(this.category, this.value, this.error);
+}
+
+class FinancialData {
+  final DateTime date;
+  final double open;
+  final double high;
+  final double low;
+  final double close;
+  final double volume;
+  
+  FinancialData(this.date, this.open, this.high, this.low, this.close, this.volume);
 }

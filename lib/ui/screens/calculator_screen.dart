@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/calculator_logic.dart';
 import '../../services/tts_service.dart';
 import '../../services/sharing_service.dart';
+import '../../services/history_service.dart';
 import '../../providers/performance_provider.dart';
 import '../widgets/calculator_button.dart';
 import '../widgets/display_screen.dart';
@@ -19,8 +20,7 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen>
     with TickerProviderStateMixin {
   late CalculatorLogic _calculator;
   late AnimationController _buttonController;
-  bool _isScientificMode = false;
-  bool _isDegreeMode = true;
+  // Removed scientific mode - this is now basic calculator only
   bool _isTTSEnabled = false;
 
   @override
@@ -47,7 +47,7 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen>
     super.dispose();
   }
 
-  void _onButtonPressed(String value) {
+  void _onButtonPressed(String value) async {
     HapticFeedback.lightImpact();
     _buttonController.forward().then((_) {
       _buttonController.reverse();
@@ -73,6 +73,12 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen>
         if (!_calculator.isError) {
           final expression = _calculator.currentExpression.isEmpty ? '0' : _calculator.currentExpression;
           ref.read(performanceProvider.notifier).registerObject('calculations', expression, _calculator.currentResult);
+        }
+        
+        // Save to history if calculation was successful
+        if (!_calculator.isError) {
+          final expression = _calculator.currentExpression.isEmpty ? '0' : _calculator.currentExpression;
+          await HistoryService.saveBasicCalculation(expression, _calculator.currentResult);
         }
         
         // Speak result if TTS is enabled
@@ -123,12 +129,7 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen>
       case '±':
         _calculator.inputFunction('negate');
         break;
-      case 'DEG':
-      case 'RAD':
-        setState(() {
-          _isDegreeMode = !_isDegreeMode;
-        });
-        break;
+      // DEG/RAD toggle removed - this is basic calculator only
       default:
         if (RegExp(r'[0-9]').hasMatch(value)) {
           _calculator.inputNumber(value);
@@ -174,64 +175,26 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen>
                 ),
               ),
               
-              // Mode Toggle
+              // Mode Indicator (Basic Calculator)
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // Scientific Mode Toggle
-                    AnimatedContainer(
-                      duration: const Duration(milliseconds: 300),
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          setState(() {
-                            _isScientificMode = !_isScientificMode;
-                          });
-                        },
-                        icon: Icon(
-                          _isScientificMode ? Icons.calculate : Icons.functions,
-                          size: 18,
-                        ),
-                        label: Text(_isScientificMode ? 'Scientific' : 'Basic'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: _isScientificMode
-                              ? theme.colorScheme.primary
-                              : theme.colorScheme.surface,
-                          foregroundColor: _isScientificMode
-                              ? theme.colorScheme.onPrimary
-                              : theme.colorScheme.onSurface,
-                          elevation: _isScientificMode ? 4 : 1,
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primary,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        'Basic Calculator',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onPrimary,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
-                    
-                    // Degree/Radian Toggle
-                    if (_isScientificMode)
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 300),
-                        child: ElevatedButton.icon(
-                          onPressed: () {
-                            setState(() {
-                              _isDegreeMode = !_isDegreeMode;
-                            });
-                          },
-                          icon: Icon(
-                            _isDegreeMode ? Icons.straighten : Icons.radar,
-                            size: 18,
-                          ),
-                          label: Text(_isDegreeMode ? 'DEG' : 'RAD'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: _isDegreeMode
-                                ? theme.colorScheme.secondary
-                                : theme.colorScheme.surface,
-                            foregroundColor: _isDegreeMode
-                                ? theme.colorScheme.onSecondary
-                                : theme.colorScheme.onSurface,
-                            elevation: _isDegreeMode ? 4 : 1,
-                          ),
-                        ),
-                      ),
                   ],
                 ),
               ),
@@ -263,12 +226,7 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen>
       ['±', '0', '.', '='],
     ];
 
-    final scientificButtons = [
-      ['sin', 'cos', 'tan', 'log'],
-      ['ln', '√', '∛', 'x²'],
-      ['x³', 'x!', '1/x', 'π'],
-      ['e', '(', ')', '%'],
-    ];
+    // Scientific buttons removed - this is basic calculator only
 
     final memoryButtons = [
       ['M+', 'M-', 'MR', 'MC'],
@@ -294,34 +252,9 @@ class _CalculatorScreenState extends ConsumerState<CalculatorScreen>
         
         const SizedBox(height: 8),
         
-        // Scientific buttons (if in scientific mode)
-        if (_isScientificMode) ...[
-          Expanded(
-            child: Column(
-              children: scientificButtons.map((row) {
-                return Expanded(
-                  child: Row(
-                    children: row.map((button) {
-                      return Expanded(
-                        child: CalculatorButton(
-                          text: button,
-                          onPressed: () => _onButtonPressed(button),
-                          buttonType: _getButtonType(button),
-                          theme: theme,
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                );
-              }).toList(),
-            ),
-          ),
-          const SizedBox(height: 8),
-        ],
-        
         // Basic buttons (always visible)
         Expanded(
-          flex: _isScientificMode ? 2 : 3,
+          flex: 3,
           child: Column(
             children: basicButtons.map((row) {
               return Expanded(

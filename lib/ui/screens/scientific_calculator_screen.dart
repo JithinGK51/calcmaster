@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/scientific_calculator_logic.dart';
 import '../../services/tts_service.dart';
 import '../../services/sharing_service.dart';
+import '../../services/history_service.dart';
 import '../widgets/calculator_button.dart';
 import '../widgets/display_screen.dart';
 
@@ -47,80 +48,153 @@ class _ScientificCalculatorScreenState extends ConsumerState<ScientificCalculato
     super.dispose();
   }
 
-  void _onButtonPressed(String value) {
+  void _onButtonPressed(String value) async {
     HapticFeedback.lightImpact();
     _buttonController.forward().then((_) {
       _buttonController.reverse();
     });
 
-    setState(() {
-      switch (value) {
-        case 'C':
+    switch (value) {
+      case 'C':
+        setState(() {
           _currentExpression = '';
           _currentResult = '0';
-          break;
-        case 'CE':
+        });
+        break;
+      case 'CE':
+        setState(() {
           _currentExpression = '';
           _currentResult = '0';
-          break;
-        case '⌫':
+        });
+        break;
+      case '⌫':
+        setState(() {
           if (_currentExpression.isNotEmpty) {
             _currentExpression = _currentExpression.substring(0, _currentExpression.length - 1);
           }
-          break;
-        case '=':
-          try {
-            final result = ScientificCalculatorLogic.evaluate(_currentExpression);
+        });
+        break;
+      case '=':
+        try {
+          final result = ScientificCalculatorLogic.evaluate(_currentExpression);
+          setState(() {
             _currentResult = result.toString();
-            if (_isTTSEnabled) {
-              TTSService.speakCalculation(_currentExpression, _currentResult);
-            }
-          } catch (e) {
-            _currentResult = 'Error';
+          });
+          
+          // Save to history if calculation was successful
+          if (_currentExpression.isNotEmpty) {
+            await HistoryService.saveScientificCalculation(_currentExpression, _currentResult);
           }
-          break;
-        case 'sin':
-        case 'cos':
-        case 'tan':
+          
+          if (_isTTSEnabled) {
+            TTSService.speakCalculation(_currentExpression, _currentResult);
+          }
+        } catch (e) {
+          setState(() {
+            _currentResult = 'Error';
+          });
+        }
+        break;
+      case 'sin':
+      case 'cos':
+      case 'tan':
+      case 'asin':
+      case 'acos':
+      case 'atan':
+      case 'sinh':
+      case 'cosh':
+      case 'tanh':
+      case 'asinh':
+      case 'acosh':
+      case 'atanh':
+      case 'log':
+      case 'ln':
+      case 'log2':
+      case 'exp':
+      case 'exp10':
+      case 'exp2':
+        setState(() {
           _currentExpression += '$value(';
-          break;
-        case 'log':
-        case 'ln':
-          _currentExpression += '$value(';
-          break;
-        case '√':
+        });
+        break;
+      case '√':
+        setState(() {
           _currentExpression += 'sqrt(';
-          break;
-        case '∛':
+        });
+        break;
+      case '∛':
+        setState(() {
           _currentExpression += 'cbrt(';
-          break;
-        case 'x²':
+        });
+        break;
+      case 'x²':
+        setState(() {
           _currentExpression += '^2';
-          break;
-        case 'x³':
+        });
+        break;
+      case 'x³':
+        setState(() {
           _currentExpression += '^3';
-          break;
-        case 'x!':
+        });
+        break;
+      case 'xʸ':
+        setState(() {
+          _currentExpression += '^';
+        });
+        break;
+      case 'x!':
+        setState(() {
           _currentExpression += '!';
-          break;
-        case '1/x':
-          _currentExpression += '1/';
-          break;
-        case 'π':
+        });
+        break;
+      case '1/x':
+        setState(() {
+          _currentExpression = '1/($_currentExpression)';
+        });
+        break;
+      case 'π':
+        setState(() {
           _currentExpression += 'pi';
-          break;
-        case 'e':
+        });
+        break;
+      case 'e':
+        setState(() {
           _currentExpression += 'e';
-          break;
-        case '±':
+        });
+        break;
+      case 'nPr':
+        setState(() {
+          _currentExpression += 'P';
+        });
+        break;
+      case 'nCr':
+        setState(() {
+          _currentExpression += 'C';
+        });
+        break;
+      case 'mod':
+        setState(() {
+          _currentExpression += '%';
+        });
+        break;
+      case 'gcd':
+      case 'lcm':
+        setState(() {
+          _currentExpression += '$value(';
+        });
+        break;
+      case '±':
+        setState(() {
           if (_currentExpression.isNotEmpty) {
             _currentExpression = '(-$_currentExpression)';
           }
-          break;
-        default:
+        });
+        break;
+      default:
+        setState(() {
           _currentExpression += value;
-      }
-    });
+        });
+    }
   }
 
   @override
@@ -303,9 +377,13 @@ class _ScientificCalculatorScreenState extends ConsumerState<ScientificCalculato
 
     final scientificButtons = [
       ['sin', 'cos', 'tan', 'log'],
-      ['ln', '√', '∛', 'x²'],
-      ['x³', 'x!', '1/x', 'π'],
-      ['e', '(', ')', '%'],
+      ['asin', 'acos', 'atan', 'ln'],
+      ['sinh', 'cosh', 'tanh', 'log2'],
+      ['asinh', 'acosh', 'atanh', 'exp'],
+      ['√', '∛', 'x²', 'x³'],
+      ['xʸ', 'x!', '1/x', 'exp10'],
+      ['π', 'e', 'nPr', 'nCr'],
+      ['mod', 'gcd', 'lcm', 'exp2'],
     ];
 
     return Container(
@@ -399,9 +477,13 @@ class _ScientificCalculatorScreenState extends ConsumerState<ScientificCalculato
   Widget _buildScientificFunctionsGrid(ThemeData theme) {
     final scientificButtons = [
       ['sin', 'cos', 'tan', 'log'],
-      ['ln', '√', '∛', 'x²'],
-      ['x³', 'x!', '1/x', 'π'],
-      ['e', '(', ')', '%'],
+      ['asin', 'acos', 'atan', 'ln'],
+      ['sinh', 'cosh', 'tanh', 'log2'],
+      ['asinh', 'acosh', 'atanh', 'exp'],
+      ['√', '∛', 'x²', 'x³'],
+      ['xʸ', 'x!', '1/x', 'exp10'],
+      ['π', 'e', 'nPr', 'nCr'],
+      ['mod', 'gcd', 'lcm', 'exp2'],
     ];
 
     return Container(
@@ -446,7 +528,9 @@ class _ScientificCalculatorScreenState extends ConsumerState<ScientificCalculato
       return CalculatorButtonType.operator;
     } else if (['C', 'CE', '⌫'].contains(button)) {
       return CalculatorButtonType.function;
-    } else if (['sin', 'cos', 'tan', 'log', 'ln', '√', '∛', 'x²', 'x³', 'x!', '1/x', 'π', 'e'].contains(button)) {
+    } else if (['sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'sinh', 'cosh', 'tanh', 'asinh', 'acosh', 'atanh', 
+                 'log', 'ln', 'log2', 'exp', 'exp10', 'exp2', '√', '∛', 'x²', 'x³', 'xʸ', 'x!', '1/x', 
+                 'π', 'e', 'nPr', 'nCr', 'mod', 'gcd', 'lcm'].contains(button)) {
       return CalculatorButtonType.scientific;
     } else if (['(', ')', '%', '±'].contains(button)) {
       return CalculatorButtonType.function;

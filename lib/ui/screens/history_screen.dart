@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../services/tts_service.dart';
 import '../../services/sharing_service.dart';
+import '../../services/history_service.dart';
+import '../../models/calculation_model.dart';
 
 class HistoryScreen extends ConsumerStatefulWidget {
   const HistoryScreen({super.key});
@@ -15,7 +17,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
   String _selectedFilter = 'All';
   String _result = '';
   bool _isTTSEnabled = false;
-  List<Map<String, dynamic>> _historyItems = [];
+  List<CalculationHistory> _historyItems = [];
 
   final List<String> _filters = [
     'All',
@@ -36,7 +38,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
   void initState() {
     super.initState();
     _initializeTTS();
-    _loadMockHistory();
+    _loadHistory();
   }
 
   Future<void> _initializeTTS() async {
@@ -46,110 +48,69 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
     });
   }
 
-  void _loadMockHistory() {
-    // Mock history data for demonstration
-    _historyItems = [
-      {
-        'id': 1,
-        'type': 'Calculator',
-        'expression': '2 + 3 × 4',
-        'result': '14',
-        'timestamp': DateTime.now().subtract(const Duration(minutes: 5)),
-        'category': 'Basic',
-      },
-      {
-        'id': 2,
-        'type': 'Algebra',
-        'expression': 'x² + 5x + 6 = 0',
-        'result': 'x = -2, x = -3',
-        'timestamp': DateTime.now().subtract(const Duration(minutes: 15)),
-        'category': 'Quadratic',
-      },
-      {
-        'id': 3,
-        'type': 'Geometry',
-        'expression': 'Circle Area (r=5)',
-        'result': '78.54 cm²',
-        'timestamp': DateTime.now().subtract(const Duration(hours: 1)),
-        'category': 'Area',
-      },
-      {
-        'id': 4,
-        'type': 'Finance',
-        'expression': 'EMI Calculator (₹10L, 8.5%, 20 years)',
-        'result': '₹8,697.50',
-        'timestamp': DateTime.now().subtract(const Duration(hours: 2)),
-        'category': 'Loan',
-      },
-      {
-        'id': 5,
-        'type': 'Health',
-        'expression': 'BMI Calculator (70kg, 175cm)',
-        'result': '22.86 (Normal)',
-        'timestamp': DateTime.now().subtract(const Duration(hours: 3)),
-        'category': 'BMI',
-      },
-      {
-        'id': 6,
-        'type': 'Unit Converter',
-        'expression': '100 km to miles',
-        'result': '62.14 miles',
-        'timestamp': DateTime.now().subtract(const Duration(hours: 4)),
-        'category': 'Length',
-      },
-      {
-        'id': 7,
-        'type': 'Currency Converter',
-        'expression': '100 USD to EUR',
-        'result': '92.00 EUR',
-        'timestamp': DateTime.now().subtract(const Duration(hours: 5)),
-        'category': 'Exchange',
-      },
-      {
-        'id': 8,
-        'type': 'Graph',
-        'expression': 'y = x²',
-        'result': 'Parabola plotted',
-        'timestamp': DateTime.now().subtract(const Duration(hours: 6)),
-        'category': 'Function',
-      },
-      {
-        'id': 9,
-        'type': 'Budget',
-        'expression': 'Added expense: ₹500 (Food)',
-        'result': 'Balance: ₹2,500',
-        'timestamp': DateTime.now().subtract(const Duration(hours: 7)),
-        'category': 'Expense',
-      },
-      {
-        'id': 10,
-        'type': 'Reminder',
-        'expression': 'Meeting at 3 PM',
-        'result': 'Reminder set for 3:00 PM',
-        'timestamp': DateTime.now().subtract(const Duration(hours: 8)),
-        'category': 'Schedule',
-      },
-    ];
-  }
-
-  List<Map<String, dynamic>> get _filteredHistory {
+  void _loadHistory() {
+    // Load real history data from storage
     if (_selectedFilter == 'All') {
-      return _historyItems;
+      _historyItems = HistoryService.getAllCalculations();
+    } else {
+      // Filter by type
+      CalculationType? type;
+      switch (_selectedFilter) {
+        case 'Calculator':
+          type = CalculationType.basic;
+          break;
+        case 'Algebra':
+          type = CalculationType.algebra;
+          break;
+        case 'Geometry':
+          type = CalculationType.geometry;
+          break;
+        case 'Finance':
+          type = CalculationType.finance;
+          break;
+        case 'Health':
+          type = CalculationType.health;
+          break;
+        case 'Unit Converter':
+          type = CalculationType.unitConverter;
+          break;
+        case 'Currency Converter':
+          type = CalculationType.currencyConverter;
+          break;
+        case 'Budget':
+          type = CalculationType.finance; // Budget is finance type
+          break;
+      }
+      
+      if (type != null) {
+        _historyItems = HistoryService.getCalculationsByType(type);
+      } else {
+        _historyItems = HistoryService.getAllCalculations();
+      }
     }
-    return _historyItems.where((item) => item['type'] == _selectedFilter).toList();
   }
 
-  void _clearHistory() {
+  List<CalculationHistory> get _filteredHistory {
+    return _historyItems;
+  }
+
+  void _clearHistory() async {
+    await HistoryService.clearAllHistory();
     setState(() {
       _historyItems.clear();
       _result = 'History cleared successfully';
     });
+
+    // Speak result if TTS is enabled
+    if (_isTTSEnabled) {
+      TTSService.speakHistoryResult('clear', 'History cleared successfully');
+    }
   }
 
   void _exportHistory() {
     final filteredItems = _filteredHistory;
     final exportData = filteredItems.map((item) {
-      return '${item['timestamp'].toString().split(' ')[0]} | ${item['type']} | ${item['expression']} | ${item['result']}';
+      return '${item.timestamp.toString().split(' ')[0]} | ${item.type.name} | ${item.expression} | ${item.result}';
     }).join('\n');
 
     setState(() {
@@ -157,9 +118,10 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
     });
   }
 
-  void _deleteItem(int id) {
+  void _deleteItem(String id) async {
+    await HistoryService.deleteCalculation(id);
     setState(() {
-      _historyItems.removeWhere((item) => item['id'] == id);
+      _historyItems.removeWhere((item) => item.id == id);
       _result = 'Item deleted from history';
     });
   }
@@ -286,15 +248,15 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                         margin: const EdgeInsets.only(bottom: 8),
                         child: ListTile(
                           leading: CircleAvatar(
-                            backgroundColor: _getTypeColor(item['type']),
+                            backgroundColor: _getTypeColor(item.type.name),
                             child: Icon(
-                              _getTypeIcon(item['type']),
+                              _getTypeIcon(item.type.name),
                               color: Colors.white,
                               size: 20,
                             ),
                           ),
                           title: Text(
-                            item['expression'],
+                            item.expression,
                             style: theme.textTheme.bodyMedium?.copyWith(
                               fontWeight: FontWeight.w500,
                             ),
@@ -303,11 +265,11 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Result: ${item['result']}',
+                                'Result: ${item.result}',
                                 style: theme.textTheme.bodySmall,
                               ),
                               Text(
-                                '${item['timestamp'].toString().split(' ')[0]} at ${item['timestamp'].toString().split(' ')[1].substring(0, 5)}',
+                                '${item.timestamp.toString().split(' ')[0]} at ${item.timestamp.toString().split(' ')[1].substring(0, 5)}',
                                 style: theme.textTheme.bodySmall?.copyWith(
                                   color: theme.colorScheme.onSurface.withOpacity(0.6),
                                 ),
@@ -340,13 +302,13 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                             onSelected: (value) {
                               if (value == 'copy') {
                                 Clipboard.setData(ClipboardData(
-                                  text: '${item['expression']} = ${item['result']}',
+                                  text: '${item.expression} = ${item.result}',
                                 ));
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(content: Text('Copied to clipboard')),
                                 );
                               } else if (value == 'delete') {
-                                _deleteItem(item['id']);
+                                _deleteItem(item.id);
                               }
                             },
                           ),
@@ -487,7 +449,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
     
     final typeCounts = <String, int>{};
     for (final item in _historyItems) {
-      typeCounts[item['type']] = (typeCounts[item['type']] ?? 0) + 1;
+      typeCounts[item.type.name] = (typeCounts[item.type.name] ?? 0) + 1;
     }
     
     return typeCounts.entries
@@ -500,7 +462,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
     
     final now = DateTime.now();
     final recentItems = _historyItems.where((item) {
-      final diff = now.difference(item['timestamp']);
+      final diff = now.difference(item.timestamp);
       return diff.inHours < 24;
     }).length;
     

@@ -408,3 +408,119 @@ class ResourceManager {
     ResourceService.cleanupResource('user_data');
   }
 }
+
+// Advanced Performance Analysis
+class AdvancedPerformanceAnalyzer {
+  static Map<String, dynamic> getAdvancedAnalysis(PerformanceState state) {
+    final analysis = <String, dynamic>{};
+    
+    // Performance score (0-100)
+    double performanceScore = 100;
+    
+    // Deduct points for various issues
+    if (state.performanceStats['averageCalculationTime'] > 50) {
+      performanceScore -= 20;
+    }
+    
+    if (state.memoryStats['usedMemory'] > 80 * 1024 * 1024) {
+      performanceScore -= 15;
+    }
+    
+    if (state.performanceStats['frameDrops'] > 5) {
+      performanceScore -= 10;
+    }
+    
+    if (state.resourceStats['batteryLevel'] < 30) {
+      performanceScore -= 5;
+    }
+    
+    analysis['performanceScore'] = performanceScore.clamp(0, 100);
+    analysis['grade'] = _getPerformanceGrade(performanceScore);
+    analysis['bottlenecks'] = _identifyBottlenecks(state);
+    analysis['optimizationSuggestions'] = _getOptimizationSuggestions(state);
+    
+    return analysis;
+  }
+  
+  static String _getPerformanceGrade(double score) {
+    if (score >= 90) return 'A+';
+    if (score >= 80) return 'A';
+    if (score >= 70) return 'B';
+    if (score >= 60) return 'C';
+    if (score >= 50) return 'D';
+    return 'F';
+  }
+  
+  static List<String> _identifyBottlenecks(PerformanceState state) {
+    final bottlenecks = <String>[];
+    
+    if (state.performanceStats['averageCalculationTime'] > 100) {
+      bottlenecks.add('Calculation Performance');
+    }
+    
+    if (state.memoryStats['usedMemory'] > 100 * 1024 * 1024) {
+      bottlenecks.add('Memory Usage');
+    }
+    
+    if (state.performanceStats['frameDrops'] > 10) {
+      bottlenecks.add('UI Rendering');
+    }
+    
+    if (state.resourceStats['batteryLevel'] < 20) {
+      bottlenecks.add('Battery Life');
+    }
+    
+    return bottlenecks;
+  }
+  
+  static List<String> _getOptimizationSuggestions(PerformanceState state) {
+    final suggestions = <String>[];
+    
+    if (state.performanceStats['averageCalculationTime'] > 50) {
+      suggestions.add('Use more efficient algorithms for complex calculations');
+      suggestions.add('Implement calculation caching for repeated operations');
+    }
+    
+    if (state.memoryStats['usedMemory'] > 80 * 1024 * 1024) {
+      suggestions.add('Clear calculation history regularly');
+      suggestions.add('Optimize image and asset loading');
+    }
+    
+    if (state.performanceStats['frameDrops'] > 5) {
+      suggestions.add('Reduce animation complexity');
+      suggestions.add('Use lighter theme variants');
+    }
+    
+    return suggestions;
+  }
+  
+  // Performance benchmarking
+  static Future<Map<String, dynamic>> runBenchmark() async {
+    final benchmark = <String, dynamic>{};
+    
+    // Calculation benchmark
+    final calculationStart = DateTime.now();
+    for (int i = 0; i < 1000; i++) {
+      // Simulate calculation
+      await Future.delayed(const Duration(microseconds: 100));
+    }
+    final calculationEnd = DateTime.now();
+    benchmark['calculationTime'] = calculationEnd.difference(calculationStart).inMilliseconds;
+    
+    // Memory benchmark
+    final memoryStart = DateTime.now();
+    // Simulate memory operations
+    await Future.delayed(const Duration(milliseconds: 5));
+    final memoryEnd = DateTime.now();
+    benchmark['memoryOperationTime'] = memoryEnd.difference(memoryStart).inMilliseconds;
+    
+    // UI benchmark
+    final uiStart = DateTime.now();
+    // Simulate UI operations
+    await Future.delayed(const Duration(milliseconds: 10));
+    final uiEnd = DateTime.now();
+    benchmark['uiResponseTime'] = uiEnd.difference(uiStart).inMilliseconds;
+    
+    return benchmark;
+  }
+}

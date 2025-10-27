@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lottie/lottie.dart';
 import 'package:flutter/services.dart';
 import 'main_navigation_screen.dart';
 
@@ -25,6 +24,17 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   @override
   void initState() {
     super.initState();
+    
+    // Set system UI overlay style for full screen
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+        systemNavigationBarColor: Colors.transparent,
+        systemNavigationBarIconBrightness: Brightness.light,
+      ),
+    );
     
     _logoController = AnimationController(
       duration: const Duration(milliseconds: 2000),
@@ -95,6 +105,17 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   }
 
   void _navigateToMain() {
+    // Restore system UI before navigation
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
+        systemNavigationBarColor: Colors.transparent,
+        systemNavigationBarIconBrightness: Brightness.dark,
+      ),
+    );
+    
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) =>
@@ -121,6 +142,17 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
   @override
   void dispose() {
+    // Restore system UI in case of early disposal
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
+        systemNavigationBarColor: Colors.transparent,
+        systemNavigationBarIconBrightness: Brightness.dark,
+      ),
+    );
+    
     _logoController.dispose();
     _textController.dispose();
     _backgroundController.dispose();
@@ -133,10 +165,13 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     final size = MediaQuery.of(context).size;
     
     return Scaffold(
+      extendBodyBehindAppBar: true,
       body: AnimatedBuilder(
         animation: _backgroundAnimation,
         builder: (context, child) {
           return Container(
+            width: double.infinity,
+            height: double.infinity,
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
@@ -153,40 +188,44 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                 ],
               ),
             ),
-            child: SafeArea(
-              child: Stack(
-                children: [
-                  // Animated background particles
-                  ...List.generate(20, (index) {
-                    return Positioned(
-                      left: (index * 50.0) % size.width,
-                      top: (index * 30.0) % size.height,
-                      child: Container(
-                        width: 4,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: theme.colorScheme.onPrimary.withOpacity(
-                            0.1 + (_backgroundAnimation.value * 0.2),
-                          ),
+            child: Stack(
+              children: [
+                // Animated background particles
+                ...List.generate(20, (index) {
+                  return Positioned(
+                    left: (index * 50.0) % size.width,
+                    top: (index * 30.0) % size.height,
+                    child: Container(
+                      width: 4,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: theme.colorScheme.onPrimary.withOpacity(
+                          0.1 + (_backgroundAnimation.value * 0.2),
                         ),
-                      ).animate().fadeIn(
-                        duration: (1000 + index * 100).ms,
-                        delay: (index * 200).ms,
-                      ).scale(
-                        begin: const Offset(0, 0),
-                        end: const Offset(1, 1),
                       ),
-                    );
-                  }),
-                  
-                  // Main content
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Spacer(flex: 2),
+                    ).animate().fadeIn(
+                      duration: (1000 + index * 100).ms,
+                      delay: (index * 200).ms,
+                    ).scale(
+                      begin: const Offset(0, 0),
+                      end: const Offset(1, 1),
+                    ),
+                  );
+                }),
+                
+                // Main content with proper padding for status bar
+                Padding(
+                  padding: EdgeInsets.only(
+                    top: MediaQuery.of(context).padding.top,
+                    bottom: MediaQuery.of(context).padding.bottom,
+                  ),
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
                       
-                      // Enhanced Logo Animation with Lottie
+                      // Enhanced Logo Animation
                       AnimatedBuilder(
                         animation: _logoAnimation,
                         builder: (context, child) {
@@ -216,20 +255,19 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                                 child: Stack(
                                   alignment: Alignment.center,
                                   children: [
-                                    // Lottie animation (if available)
-                                    if (true) // Replace with actual Lottie file check
-                                      Container(
-                                        width: 100,
-                                        height: 100,
-                                        child: Icon(
-                                          Icons.calculate_rounded,
-                                          size: 70,
-                                          color: theme.colorScheme.primary,
-                                        ),
-                                      ).animate().rotate(
-                                        duration: 2000.ms,
-                                        curve: Curves.easeInOut,
+                                    // Calculator icon
+                                    SizedBox(
+                                      width: 100,
+                                      height: 100,
+                                      child: Icon(
+                                        Icons.calculate_rounded,
+                                        size: 70,
+                                        color: theme.colorScheme.primary,
                                       ),
+                                    ).animate().rotate(
+                                      duration: 2000.ms,
+                                      curve: Curves.easeInOut,
+                                    ),
                                     
                                     // Pulsing ring
                                     Container(
@@ -318,7 +356,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                       // Enhanced Loading Indicator
                       Column(
                         children: [
-                          Container(
+                          SizedBox(
                             width: 50,
                             height: 50,
                             child: Stack(
@@ -398,11 +436,12 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                         ],
                       ),
                       
-                      const SizedBox(height: 40),
-                    ],
+                        const SizedBox(height: 40),
+                      ],
+                    ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           );
         },
